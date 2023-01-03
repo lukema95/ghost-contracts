@@ -1,41 +1,61 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+contract Ghost {
 
-contract Ghost is Ownable {
-  mapping(address => bool) register;
-  mapping(address => address) router;
+  mapping(address => address[]) public registry;
+  mapping(address => address) public router;
 
-  event enroll(address);
-  event route(address);
+  event Register(address, address[]);
+  event Route(address, address);
 
   constructor() {
   }
 
-  function enroll() internal {
-    bool registed = register[msg.sender];
-    require(registed == false, "Error 1");
-    register[msg.sender] = true;
+  function register(address[] memory _registry) external {
+    address[] memory registed = registry[msg.sender];
+    require(registed.length == 0, "user already registed");
+    for (uint i = 0; i < _registry.length; i++) {
+      registry[msg.sender].push(_registry[i]);
+    }
+
+    emit Register(msg.sender, _registry);
+    
+  }
+
+  function queryRegistry(address _account) public view returns(address[] memory){
+    address[] memory _registry = registry[_account];
+    return _registry;
+  }
+
+  function queryRegistryIndex(address _account, uint256 index) public view returns(address) {
+    address[] memory _registry = registry[_account];
+    require(_registry.length > index, "index larger than user's registry length");
+    return _registry[index];
   }
   
-  function route(address to) internal {
-    bool registed = register[msg.sender];
-    require(registed == true, "Error 2");
-    route[msg.sender] = to;
+  function route(address to) external {
+    address[] memory _registry = registry[msg.sender];
+    require(_registry.length > 0, "user has not registered yet");
+    require(router[msg.sender] == address(0), "user already routed");
+
+    for (uint i = 0; i < _registry.length; i++) {
+      if (to == _registry[i]) {
+        router[msg.sender] = to;
+        emit Route(msg.sender, to);
+      }
+    }
+
+    require(router[msg.sender] != address(0), "failed to obtain a matching registered address");
   }
 
-  function setRoute(address to) external {
-    enroll();
-    route(to);
-  }
-
-  function getRoute() external view returns (address) {
-    address route = router[msg.sender];
-    if(route == address(0)) {
+  function queryRoute(address _account) external view returns (address) {
+    address redirection = router[_account];
+    if(redirection == address(0)) {
       return msg.sender;
     }
 
-    return route;
+    return redirection;
   }
 
 }
