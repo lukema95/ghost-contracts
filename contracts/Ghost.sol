@@ -46,7 +46,7 @@ contract Ghost {
       }
     }
 
-    require(router[msg.sender] != address(0), "failed to obtain a matching registered address");
+    require(router[msg.sender] != address(0), "address is not in the registery");
   }
 
   function queryRoute(address _account) external view returns (address) {

@@ -38,6 +38,13 @@ describe("Ghost", function () {
 
       });
 
+      it("Should fail if user has registered before", async function () {
+        const { ghost, owner, otherAccount } = await loadFixture(deployOneYearLockFixture);
+        await ghost.connect(otherAccount).register([owner.address])
+
+        expect(await ghost.queryRegistryIndex(otherAccount.address, 0)).to.be.revertedWith("user already registed")
+      })
+
     });
 
     describe("Events", function () {
@@ -62,6 +69,21 @@ describe("Ghost", function () {
         expect(await ghost.queryRoute(otherAccount.address)).to.equal(owner.address);
 
       });
+
+      it("Should fail if user has not registered before", async function () {
+        const { ghost, owner, otherAccount } = await loadFixture(deployOneYearLockFixture);
+        
+        await expect(ghost.connect(otherAccount).route(owner.address)).to.be.revertedWith("user has not registered yet");
+        
+      })
+
+      it("Should fail if user uses an address that is not in the registry", async function () {
+        const { ghost, owner, otherAccount } = await loadFixture(deployOneYearLockFixture);
+
+        await ghost.connect(otherAccount).register([owner.address]);
+        await expect(ghost.connect(otherAccount).route(otherAccount.address)).to.be.revertedWith("address is not in the registery");
+
+      })
     });
 
     describe("Events", function () {
